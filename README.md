@@ -41,7 +41,7 @@ Hugh Vale, Corine Dino
 Then open http://127.0.0.1:8000 in your browser.
 
 ## Repository Link
-https://github.com/<username>/budget-tracker
+https://github.com/corine26/budget-tracker
 
 ---
 
