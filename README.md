@@ -11,8 +11,8 @@ user stay aware of their spending habits and manage their daily and
 monthly budget more responsibly.
 
 ## Student Information
-Hugh Vale, Corine Dino
- BSIT 4-3
+- Names: Hugh Vale, Corine Dino
+- Course, Year & Section: BSIT 4-3
 
 ## Software Requirements
 - PHP >= 8.1
