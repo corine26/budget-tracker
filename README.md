@@ -159,3 +159,4 @@ requests, not automated feature tests.
 - APP_DEBUG must be false in deployed or shared environments.
 - Run `composer audit` and review findings before upgrading dependencies
 >>>>>>> Stashed changes
+Verification instruction: Test student ownership and deny access to another student's request.
