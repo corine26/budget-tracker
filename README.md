@@ -94,3 +94,4 @@ maintain an accurate audit trail of spending approvals.
 - Given an existing request is later modified (e.g., approved), when I
   inspect it again, then updated_at reflects a newer timestamp than
   created_at.
+## Laboratory 3 Verification
