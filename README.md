@@ -95,11 +95,11 @@ maintain an accurate audit trail of spending approvals.
   inspect it again, then updated_at reflects a newer timestamp than
   created_at.
 ## Laboratory 3 Verification
-<<<<<<< Updated upstream
 Verification instruction: Test student ownership and deny access to another student's request.
-=======
+Verification instruction: Test administrator access and administrator-only status updates.
+
 ## Secure Request Access (Laboratory 3)
- 
+
 ### Ownership and access rules
 | Action | Student (owner) | Student (not owner) | Administrator | Guest |
 |---|---|---|---|---|
@@ -107,13 +107,13 @@ Verification instruction: Test student ownership and deny access to another stud
 | View a request | Allowed | 403 Forbidden | Allowed | Redirect to login |
 | Create a request | Allowed | Allowed (own) | Not allowed | Redirect to login |
 | Update status | 403 Forbidden | 403 Forbidden | Allowed | Redirect to login |
- 
+
 Ownership is decided by `requests.user_id`, never by requester_name or requester_email.
- 
+
 ### Denial response
 A student opening another student's record receives **403 Forbidden**.
 This is applied consistently to view and status-update denials.
- 
+
 ### Route summary
 | Method | URI | Controller method | Access |
 |---|---|---|---|
@@ -125,14 +125,14 @@ This is applied consistently to view and status-update denials.
 | POST | /requests | ServiceRequestController@store | Students |
 | GET | /requests/{id} | ServiceRequestController@show | Owner or admin |
 | PATCH | /requests/{id}/status | ServiceRequestController@updateStatus | Admin only |
- 
+
 ### File responsibilities
 - Policy (app/Policies/ServiceRequestPolicy.php): Corine Dino
 - Controller (app/Http/Controllers/ServiceRequestController.php): Corine Dino
 - Routes (routes/web.php): Corine Dino
 - Views (resources/views/): Hugh Vale
 - Tests (manual access/input test matrix T01-T10): Hugh Vale
- 
+
 ### Setup, migration and seeding
 1. composer install
 2. cp .env.example .env
@@ -143,20 +143,18 @@ This is applied consistently to view and status-update denials.
 6. php artisan migrate
 7. php artisan db:seed --class=LabAccountsSeeder
 8. php artisan serve
- 
+
 Fictional accounts: student.a@example.com, student.b@example.com,
 admin@example.com (passwords come from your local .env).
- 
+
 ### Testing steps
 Run the manual matrix T01-T10 with three separate browser sessions
 (Student A, Student B, Administrator). Compare database values before and
 after each write attempt. Test CSRF rejection (419) through live browser
 requests, not automated feature tests.
- 
+
 ### Security notes
 - Passwords are stored with Laravel hashing (bcrypt).
 - .env is excluded by .gitignore; .env.example holds no real credentials.
 - APP_DEBUG must be false in deployed or shared environments.
 - Run `composer audit` and review findings before upgrading dependencies
->>>>>>> Stashed changes
-Verification instruction: Test student ownership and deny access to another student's request.
