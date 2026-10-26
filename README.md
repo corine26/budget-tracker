@@ -158,7 +158,7 @@ Open http://127.0.0.1:8080. Do not use `migrate:fresh` or `docker compose down -
 4. `WEB_PORT=8081 docker compose -p budget-review up -d --build`
 5. `docker compose -p budget-review exec app php artisan migrate --force`
 6. `docker compose -p budget-review exec app php artisan db:seed --class=LabAccountsSeeder --force`
-7. Open http://127.0.0.1:8081 (the project uses its own database volume)
+7. Open http://127.0.0.1:8083 (the project uses its own database volume)
 
 ### Why credentials are not stored in Docker images
 Anyone who receives an image can read every layer, so a password or key baked
