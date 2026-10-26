@@ -95,66 +95,74 @@ maintain an accurate audit trail of spending approvals.
   inspect it again, then updated_at reflects a newer timestamp than
   created_at.
 ## Laboratory 3 Verification
-Verification instruction: Test student ownership and deny access to another student's request.
-Verification instruction: Test administrator access and administrator-only status updates.
 
-## Secure Request Access (Laboratory 3)
 
-### Ownership and access rules
-| Action | Student (owner) | Student (not owner) | Administrator | Guest |
+## Container Environment (Laboratory 4)
+
+### Docker requirements
+- Docker Desktop or Docker Engine with Docker Compose v2 (`docker compose version`)
+- Git
+- A free local port 8080 (or choose another with WEB_PORT)
+
+### Container diagram
+Browser --> web (Nginx, 127.0.0.1:8080) --> app (PHP-FPM + Laravel, app:9000)
+        --> db (MySQL 8.0, db:3306) --> named volume db_data
+
+All three services share the private Docker network `appnet`. Only `web` is
+published, and only on 127.0.0.1. `app` and `db` are not reachable from outside.
+
+### Services
+| Service | Purpose | Image / build | Connects to | Published port |
 |---|---|---|---|---|
-| List requests | Own records only | Own records only | All records | Redirect to login |
-| View a request | Allowed | 403 Forbidden | Allowed | Redirect to login |
-| Create a request | Allowed | Allowed (own) | Not allowed | Redirect to login |
-| Update status | 403 Forbidden | 403 Forbidden | Allowed | Redirect to login |
+| web | Nginx serving only Laravel's public directory | build target `web` (nginx-unprivileged 1.27) | app:9000 (FastCGI) | 127.0.0.1:8080 -> 8080 |
+| app | Laravel on PHP-FPM, runs as non-root (www-data) | build target `app` (php 8.3-fpm-alpine) | db:3306 | none |
+| db | MySQL database with persistent storage | mysql:8.0 | app (private network) | none |
 
-Ownership is decided by `requests.user_id`, never by requester_name or requester_email.
+### Environment configuration (placeholders only)
+1. Copy the template: `cp .env.container.example .env.container`
+2. Generate an application key once: `php artisan key:generate --show`
+   and paste it into APP_KEY (keep the same key for this environment)
+3. Fill the empty values. DB_PASSWORD and MYSQL_PASSWORD must be identical;
+   choose fictional LAB_STUDENT_PASSWORD and LAB_ADMIN_PASSWORD values.
+4. Never commit `.env.container`. It is excluded by .gitignore and .dockerignore.
 
-### Denial response
-A student opening another student's record receives **403 Forbidden**.
-This is applied consistently to view and status-update denials.
+### Build and start
+    docker compose config --quiet
+    docker compose up -d --build
+    docker compose ps
 
-### Route summary
-| Method | URI | Controller method | Access |
-|---|---|---|---|
-| GET | /login | AuthController@showLogin | Guests |
-| POST | /login | AuthController@login | Guests |
-| POST | /logout | AuthController@logout | Signed-in |
-| GET | /requests | ServiceRequestController@index | Signed-in (scoped) |
-| GET | /requests/create | ServiceRequestController@create | Students |
-| POST | /requests | ServiceRequestController@store | Students |
-| GET | /requests/{id} | ServiceRequestController@show | Owner or admin |
-| PATCH | /requests/{id}/status | ServiceRequestController@updateStatus | Admin only |
+### Migrations and accounts
+    docker compose exec app php artisan migrate --force
+    docker compose exec app php artisan migrate:status
+    docker compose exec app php artisan db:seed --class=LabAccountsSeeder --force
 
-### File responsibilities
-- Policy (app/Policies/ServiceRequestPolicy.php): Corine Dino
-- Controller (app/Http/Controllers/ServiceRequestController.php): Corine Dino
-- Routes (routes/web.php): Corine Dino
-- Views (resources/views/): Hugh Vale
-- Tests (manual access/input test matrix T01-T10): Hugh Vale
+Open http://127.0.0.1:8080. Do not use `migrate:fresh` or `docker compose down -v`.
 
-### Setup, migration and seeding
-1. composer install
-2. cp .env.example .env
-3. php artisan key:generate
-4. Set DB_* values and the two LAB_*_PASSWORD values in your local .env
-   (use fictional passwords; never commit .env)
-5. Create the database budget_tracker_db in MySQL
-6. php artisan migrate
-7. php artisan db:seed --class=LabAccountsSeeder
-8. php artisan serve
+### Health checks
+- `docker compose ps` should show db, app and web as `healthy`.
+- db: `mysqladmin ping`; app: the php-fpm process; web: `/nginx-health`.
+- The app starts only after db is healthy, and web after app is healthy.
 
-Fictional accounts: student.a@example.com, student.b@example.com,
-admin@example.com (passwords come from your local .env).
+### Persistence testing results
+| Check | Result |
+|---|---|
+| Request saved (CONTAINER-PERSIST-01) | ID YOUR_ID, owner Student A, quantity 2, status YOUR_STATUS |
+| App container ID before / after replacement | YOUR_BEFORE_ID / YOUR_AFTER_ID |
+| Record after replacing the app container | still present |
+| Record after docker compose down / up | still present |
 
-### Testing steps
-Run the manual matrix T01-T10 with three separate browser sessions
-(Student A, Student B, Administrator). Compare database values before and
-after each write attempt. Test CSRF rejection (419) through live browser
-requests, not automated feature tests.
+### Reproduction procedure
+1. `git clone https://github.com/corine26/budget-tracker.git budget-tracker-review`
+2. `cd budget-tracker-review` and check out the reviewed commit
+3. `cp .env.container.example .env.container` and fill your own private values
+4. `WEB_PORT=8081 docker compose -p budget-review up -d --build`
+5. `docker compose -p budget-review exec app php artisan migrate --force`
+6. `docker compose -p budget-review exec app php artisan db:seed --class=LabAccountsSeeder --force`
+7. Open http://127.0.0.1:8081 (the project uses its own database volume)
 
-### Security notes
-- Passwords are stored with Laravel hashing (bcrypt).
-- .env is excluded by .gitignore; .env.example holds no real credentials.
-- APP_DEBUG must be false in deployed or shared environments.
-- Run `composer audit` and review findings before upgrading dependencies
+### Why credentials are not stored in Docker images
+Anyone who receives an image can read every layer, so a password or key baked
+into it is exposed to everyone who pulls or inspects it, and it stays in the
+layer history even if a later step deletes it. Credentials are therefore
+supplied at runtime through `.env.container`, which is excluded from Git and
+from the build context.
