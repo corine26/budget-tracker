@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Lab 4
+.env.container
+*.sql
+*.sql.gz
