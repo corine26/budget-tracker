@@ -42,6 +42,7 @@ class ServiceRequestController extends Controller
     // GET /requests/create
     public function create()
     {
+        abort(503, 'Request form disabled (lab fault).');
         Gate::authorize('create', ServiceRequest::class);
 
         return view('requests.create');
