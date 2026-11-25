@@ -1,0 +1,73 @@
+name: Staging Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (example v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+jobs:
+  build:
+    name: Build and checksum
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+    outputs:
+      sha256: ${{ steps.pack.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer
+          extensions: mbstring, pdo, pdo_sqlite
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run tests
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test
+
+      - name: Package artifact
+        id: pack
+        run: |
+          git archive --format=tar.gz --prefix="budget-tracker-${VERSION}/" -o "budget-tracker-${VERSION}.tar.gz" HEAD
+          SUM=$(sha256sum "budget-tracker-${VERSION}.tar.gz" | cut -d' ' -f1)
+          echo "${SUM}  budget-tracker-${VERSION}.tar.gz" > "budget-tracker-${VERSION}.sha256"
+          echo "sha256=${SUM}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: budget-tracker-${{ inputs.version }}
+          path: |
+            budget-tracker-${{ inputs.version }}.tar.gz
+            budget-tracker-${{ inputs.version }}.sha256
+
+  deploy-staging:
+    name: Deploy to staging (waits for approval)
+    needs: build
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      VERSION: ${{ inputs.version }}
+      DIGEST: ${{ needs.build.outputs.sha256 }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: budget-tracker-${{ inputs.version }}
+
+      - name: Verify the artifact digest
+        run: sha256sum -c "budget-tracker-${VERSION}.sha256"
+
+      - name: Deploy (REPLACE with the instructor's staging procedure)
+        run: |
+          echo "Promoting artifact budget-tracker-${VERSION}"
+          echo "sha256: ${DIGEST}"
+          echo "TODO: run the instructor-provided deploy step here"

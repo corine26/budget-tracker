@@ -21,6 +21,12 @@ Route::get('/', function () {
     return redirect()->route(auth()->user()->isAdmin() ? 'admin.users.index' : 'dashboard');
 })->name('home');
 
+// Release record: shows which build is running (no secrets).
+Route::get('/version', fn () => response()->json([
+    'version' => config('release.version'),
+    'commit'  => config('release.commit'),
+]));
+
 /*
 |--------------------------------------------------------------------------
 | Guests: sign up and log in
