@@ -166,3 +166,35 @@ into it is exposed to everyone who pulls or inspects it, and it stays in the
 layer history even if a later step deletes it. Credentials are therefore
 supplied at runtime through `.env.container`, which is excluded from Git and
 from the build context.
+
+
+
+
+## Release process (Laboratory 8)
+
+1. Tag the release (`git tag -a vX.Y.Z`) and record the commit SHA and the artifact checksum.
+2. Start the **Staging Release** workflow and wait at the approval gate.
+3. The approver verifies the CI result, artifact, staging target and migration plan, then approves.
+4. Verify `/up`, `/version` and the five smoke tests using fictional accounts only.
+5. If a smoke test fails, redeploy the known-good artifact and rerun the smoke tests.
+
+### Release record
+- Release version: v1.0.0
+- Commit SHA: 
+- Artifact checksum (sha256):
+- Staging target: http://127.0.0.1:8080 (Docker staging)
+- Workflow run:  app/Http/Controllers/ServiceRequestController.php
+- Approver: [name], approved at [date and time]
+- Migration: [adds user_id, kind and is_paid to budget_entries; additive; recovery point taken before migrating]
+
+### Verification steps
+- Health check: `/up` returned HTTP 200.
+- Revision check: `/version` matched the release record.
+- Smoke tests: health and revision, student login, request creation (STAGE-LIB-08), administrator status update, student restriction (HTTP 403).
+
+### Recovery result
+- Faulty version: v1.0.1-lab-fault; failing test: [request creation, HTTP 503]
+- Rollback decision made at: 4:26
+- Restored version: v1.0.0; smoke tests after rollback: all passed
+- Fictional request ID 1 was still present after the rollback.
+- Reviewed against the workflow log by: Hugh Vale
